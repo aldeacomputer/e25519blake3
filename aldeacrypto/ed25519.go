@@ -19,7 +19,6 @@ import (
 	cryptorand "crypto/rand"
 	"crypto/sha512"
 	"errors"
-	"fmt"
 	"io"
 	"strconv"
 
@@ -88,35 +87,9 @@ func (priv PrivateKey) Seed() []byte {
 //
 // A value of type [Options] can be used as opts, or crypto.Hash(0) or
 // crypto.SHA512 directly to select plain Ed25519 or Ed25519ph, respectively.
-func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOpts) (signature []byte, err error) {
-	hash := opts.HashFunc()
-	context := ""
-	if opts, ok := opts.(*Options); ok {
-		context = opts.Context
-	}
-	switch {
-	case hash == crypto.SHA512: // Ed25519ph
-		if l := len(message); l != sha512.Size {
-			return nil, errors.New("ed25519: bad Ed25519ph message hash length: " + strconv.Itoa(l))
-		}
-		if l := len(context); l > 255 {
-			return nil, errors.New("ed25519: bad Ed25519ph context length: " + strconv.Itoa(l))
-		}
-		signature := make([]byte, SignatureSize)
-		sign(signature, priv, message, domPrefixPh, context)
-		return signature, nil
-	case hash == crypto.Hash(0) && context != "": // Ed25519ctx
-		if l := len(context); l > 255 {
-			return nil, errors.New("ed25519: bad Ed25519ctx context length: " + strconv.Itoa(l))
-		}
-		signature := make([]byte, SignatureSize)
-		sign(signature, priv, message, domPrefixCtx, context)
-		return signature, nil
-	case hash == crypto.Hash(0): // Ed25519
-		return Sign(priv, message), nil
-	default:
-		return nil, errors.New("ed25519: expected opts.HashFunc() zero (unhashed message, for standard Ed25519) or SHA-512 (for Ed25519ph)")
-	}
+func (priv PrivateKey) Sign(rand io.Reader, message []byte, _opts crypto.SignerOpts) (signature []byte, err error) {
+	return Sign(priv, message), nil
+
 }
 
 // Options can be used with [PrivateKey.Sign] or [VerifyWithOptions]
@@ -169,7 +142,6 @@ func newKeyFromSeed(privateKey, seed []byte) {
 	}
 
 	h := blake3.Sum256(seed)
-	fmt.Println(h)
 	s, err := edwards25519.NewScalar().SetBytesWithClamping(h[:32])
 	if err != nil {
 		panic("ed25519: internal error: setting scalar failed")
