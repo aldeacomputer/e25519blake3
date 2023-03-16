@@ -1,4 +1,4 @@
-package main
+package ed25519blake3
 
 import (
 	"bytes"
